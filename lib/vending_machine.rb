@@ -50,8 +50,8 @@ class VendingMachine
 
   def select(input)
     selected_item = Item.all[input - 1]
-    inserted_change = wait_for_coin(selected_item)
-    change_to_return = Coin.calculate_change(inserted_change - selected_item.price)
+    wait_for_coin(selected_item)
+    change_to_return = Coin.calculate_change(money_inserted - selected_item.price)
     view.dispense(change_to_return, selected_item)
     self.money_inserted = 0
   end
@@ -61,7 +61,6 @@ class VendingMachine
       coin = view.get_coin(item, money_inserted)
       accept_or_reject_coin(coin)
     end
-    money_inserted
   end
 
   def accept_or_reject_coin(coin_integer)

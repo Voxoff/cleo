@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative '../lib/view'
 require_relative '../lib/vending_machine'
 require_relative 'support'
 
@@ -33,12 +32,12 @@ RSpec.describe VendingMachine do
     end
   end
 
-  describe '#turn on' do
+  describe '#turn_on' do
     before do
       allow(subject.view).to receive(:get_input).and_return('exit')
     end
 
-    it 'displays items, prints instructions, asks for input and routes that input' do
+    it 'prints items and instructions, asks for input and routes that input' do
       expect(subject.view).to receive(:display_items)
       expect(subject.view).to receive(:instructions)
       expect(subject.view).to receive(:get_input)
@@ -52,7 +51,7 @@ RSpec.describe VendingMachine do
   end
 
   describe '#display_items' do
-    it 'hands off to the view with list of items' do
+    it 'hands off to the view with a list of items' do
       expect(subject.view)
         .to receive(:display_items)
         .with(array_including(instance_of(Item)))
@@ -64,10 +63,11 @@ RSpec.describe VendingMachine do
   describe '#select' do
     let(:item) { Item.all.first }
 
-    it 'take change and return appropriate change and item' do
+    it 'takes change and returns appropriate change and item' do
+      allow(subject).to receive(:money_inserted).and_return(100)
       appropriate_change = 100 - item.price
 
-      expect(subject).to receive(:wait_for_coin).with(item).and_return(100)
+      expect(subject).to receive(:wait_for_coin).with(item)
       expect(Coin).to receive(:calculate_change).with(appropriate_change).and_return(10)
       expect(subject.view).to receive(:dispense).with(10, item)
 
@@ -78,24 +78,19 @@ RSpec.describe VendingMachine do
   describe '#wait_for_coin' do
     let(:item) { Item.all.first }
 
-    it 'asks for coins and assesses those coins' do
+    it 'asks for coins and accepts or rejects those coins' do
       expect(subject.view).to receive(:get_coin).with(item, 0).and_return(100)
       expect(subject).to receive(:accept_or_reject_coin).with(100).and_call_original
 
       subject.send(:wait_for_coin, item)
     end
-
-    it 'returns the money inserted' do
-      allow(subject.view).to receive(:get_coin).with(item, 0).and_return(100)
-
-      expect(subject.send(:wait_for_coin, item)).to eq 100
-    end
   end
 
   describe '#reload' do
-    context 'users chooses to reload items' do
-      it 'calls view asking for input' do
-        expect(subject.view).to receive(:choose_reload).and_return(0)
+    context 'user chooses to reload items' do
+      let(:choice) { 0 }
+      it 'calls view to ask for input' do
+        expect(subject.view).to receive(:choose_reload).and_return(choice)
         expect(subject.view).to receive(:new_item).and_return({ name: 'Test_item', price: 10 })
         expect(subject.view).to receive(:another?).and_return(false)
 
@@ -103,9 +98,10 @@ RSpec.describe VendingMachine do
       end
     end
 
-    context 'users chooses to reload coins' do
-      it 'calls view asking for input' do
-        expect(subject.view).to receive(:choose_reload).and_return(1)
+    context 'user chooses to reload coins' do
+      let(:choice) { 1 }
+      it 'calls view to ask for input' do
+        expect(subject.view).to receive(:choose_reload).and_return(choice)
         expect(subject.view).to receive(:new_change).and_return({ denomination: 10, quantity: 10 })
         expect(subject.view).to receive(:another?).and_return(false)
 
@@ -115,13 +111,25 @@ RSpec.describe VendingMachine do
   end
 
   describe '#accept_or_reject_coin' do
-    it 'checks denom of coin and either accepts or prints appropriately' do
-      expect { subject.send(:accept_or_reject_coin, 1) }
-        .to change { subject.instance_variable_get(:@money_inserted) }
-        .by(1)
+    context 'A valid coin' do
+      let(:coin_int) { 1 }
 
-      expect { subject.send(:accept_or_reject_coin, 99) }
-        .not_to change { subject.instance_variable_get(:@money_inserted) }
+      it 'checks denomination of coin and accepts the coin' do
+        expect { subject.send(:accept_or_reject_coin, coin_int) }
+          .to change { subject.money_inserted }
+          .by(1)
+      end
+    end
+
+    context 'An invalid coin' do
+      let(:coin_int) { 99 }
+
+      it 'checks denomination of coin, rejects it and prints appropriately' do
+        expect(subject.view).to receive(:print_acceptable_denominations)
+
+        expect { subject.send(:accept_or_reject_coin, coin_int) }
+          .not_to change { subject.money_inserted }
+      end
     end
   end
 
@@ -133,7 +141,7 @@ RSpec.describe VendingMachine do
 
     let(:item) { Item.all.first }
 
-    it 'ask for item, then coins and print correct change and item' do
+    it 'asks for item, then coins and prints correct change and item' do
       expect(subject.view).to receive(:get_input).and_return(1, 'exit')
       expect(subject.view).to receive(:get_coin).with(item, 0).and_return(100)
       expect(subject.view).to receive(:dispense).with({ 10 => 1 }, item)

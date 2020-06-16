@@ -9,12 +9,6 @@ RSpec.describe Coin do
 
   subject { Coin.new(denomination: 100, quantity: 10) }
 
-  describe '#initialize' do
-    it 'will raise argument error if denomination is not valid' do
-      expect { Coin.new(denomination: 99, quantity: 10) }.to raise_error(ArgumentError)
-    end
-  end
-
   describe '#validate_denomination' do
     it 'will raise an argument error if invalid denomination is given' do
       expect { Coin.new(denomination: 99, quantity: 10) }.to raise_error(ArgumentError)
@@ -28,20 +22,31 @@ RSpec.describe Coin do
   end
 
   describe '#release' do
-    it 'decreaases quantity by 1' do
+    it 'decreases quantity by 1' do
       expect { subject.release }.to change { subject.quantity }.from(10).to(9)
+    end
+
+    context 'with only one coin' do
+      let(:coin) { Coin.new(denomination: 10, quantity: 1)}
+      it 'does not have negative quantity' do
+        expect { coin.release }.to change { coin.quantity }.from(1).to(0)
+        expect { coin.release }.to_not change { coin.quantity }
+      end
     end
   end
 
   describe '.all' do
-    it 'stores previous new coins in class variable' do
-      subject = Coin.new(denomination: 1, quantity: 10)
-      expect(Coin.all).to eq([subject])
+    it 'stores and returns all instances in an array' do
+      coin = Coin.new(denomination: 1, quantity: 10)
+      expect(Coin.all).to eq([coin])
+
+      another_coin = Coin.new(denomination: 2, quantity: 10)
+      expect(Coin.all).to contain_exactly(coin, another_coin)
     end
   end
 
   describe '.reload' do
-    it 'empties all class variable on reload' do
+    it 'sets the quantity of coins to 0 on reload' do
       Coin.new(denomination: 1, quantity: 10)
       Coin.new(denomination: 100, quantity: 10)
       Coin.reload
@@ -56,14 +61,13 @@ RSpec.describe Coin do
   end
 
   describe '.calculate_change' do
-    before { Coin.class_variable_set(:@@all, []) }
-
     context 'with enough change' do
       it 'calculates change to return to user using available coins only' do
-        Coin.new(denomination: 1, quantity: 15)
-        Coin.new(denomination: 5, quantity: 15)
-        Coin.new(denomination: 10, quantity: 15)
-        Coin.new(denomination: 100, quantity: 1)
+        Coin.new(denomination: 1, quantity: 10)
+        Coin.new(denomination: 5, quantity: 10)
+        Coin.new(denomination: 10, quantity: 10)
+        Coin.new(denomination: 50, quantity: 10)
+        Coin.new(denomination: 100, quantity: 10)
         change = Coin.calculate_change(105)
         expect(change).to eq({ 100 => 1, 5 => 1 })
       end

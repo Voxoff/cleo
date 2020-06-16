@@ -2,7 +2,6 @@
 
 require_relative '../lib/view'
 require_relative '../lib/item'
-require_relative '../lib/coin'
 require_relative 'support'
 
 RSpec.describe View do
@@ -106,7 +105,7 @@ RSpec.describe View do
     end
   end
 
-  describe 'choose_reload' do
+  describe '#choose_reload' do
     it 'prints choice and awaits input' do
       expect(subject).to receive(:get_input)
 
