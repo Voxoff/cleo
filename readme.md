@@ -17,3 +17,5 @@ to extract or escape regex specific characters.
 I use @@all class variables to mimic a database. This allows us to keep track of the items and change while sticking to PORO.
 
 With more time I'd focus on guarding and testing against more edge cases.
+
+My solution is time-boxed to ~3 hours (Option 1) but I had a headstart because, as discussed, I've done the test once before.
